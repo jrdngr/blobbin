@@ -33,3 +33,8 @@ impl<T> From<(T, T)> for Vector2<T> {
     }
 }
 
+impl<T> From<Vector2<T>> for (T, T) {
+    fn from(vector: Vector2<T>) -> Self {
+        (vector.x, vector.y)
+    }
+}
