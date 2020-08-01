@@ -18,7 +18,7 @@ struct World {
 }
 
 fn main() -> anyhow::Result<()> {
-    simple_logger::init()?;
+    env_logger::init();
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
     let window = {
