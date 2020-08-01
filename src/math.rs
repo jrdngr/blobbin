@@ -1,4 +1,5 @@
 pub mod vector2;
+pub mod macros;
 
 pub use vector2::{Vector2, Vector2f};
 
