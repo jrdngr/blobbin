@@ -94,6 +94,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "imgui",
+ "imgui-wgpu",
+ "imgui-winit-support",
  "log",
  "pixels",
  "rand",
@@ -536,6 +539,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df004cfca50ef23c36850aaaa59ad52cc70d0e90243c3c7737a4dd32dc7a3c4f"
 dependencies = [
  "quick-error",
+]
+
+[[package]]
+name = "imgui"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fdb2bcc7e498e78137ce28705ae836d69e36ee2eac89d0d926cfabfcf550570"
+dependencies = [
+ "bitflags",
+ "imgui-sys",
+ "lazy_static",
+ "parking_lot",
+]
+
+[[package]]
+name = "imgui-sys"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72be9671d64dd0ed26bb708cd10060a431262ac90ae70cf7c5912feefe6849da"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "imgui-wgpu"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b641250a21c77c91144566ee4f98d81c853e89c99bb718796344da87e8804345"
+dependencies = [
+ "imgui",
+ "log",
+ "wgpu",
+]
+
+[[package]]
+name = "imgui-winit-support"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f98171c35263e3eb0dfb66cb876e3efdb788d777c1b613c7d2592303d1276bb5"
+dependencies = [
+ "imgui",
+ "winit",
 ]
 
 [[package]]

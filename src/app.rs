@@ -1,6 +1,10 @@
 pub mod state;
 
 use std::time::{Instant, Duration};
+use imgui::Context;
+use imgui_winit_support::{HiDpiMode, WinitPlatform};
+use imgui_wgpu::Renderer;
+use pixels::wgpu;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{EventLoop, ControlFlow};
 
@@ -30,6 +34,15 @@ impl App {
     pub fn run(mut self) -> ! {
         let event_loop = EventLoop::new();
         let mut state = AppState::new(self.world.width as u32, self.world.height as u32, &event_loop).unwrap();
+
+        let mut imgui = Context::create();
+        let mut platform = WinitPlatform::init(&mut imgui);
+        platform.attach_window(imgui.io_mut(), &state.window, HiDpiMode::Default);
+
+        let format = wgpu::TextureFormat::Bgra8Unorm;
+        let clear_color = wgpu::Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 };
+        let mut renderer = Renderer::new(&mut imgui, &state.pixels.device(), &mut state.pixels.queue(), format, Some(clear_color));
+
         self.last_frame = Instant::now();
 
         event_loop.run(move |event, _, control_flow| {
@@ -57,8 +70,12 @@ impl App {
                         return;
                     }
                 }
+
+                let ui = imgui.frame();
+                platform.prepare_render(&ui, &state.window);
+                let draw_data = ui.render();
             }
-    
+            
             // Handle input events
             if state.input.update(&event) {
                 // Close events
@@ -80,6 +97,8 @@ impl App {
                     }
                 }
             }
+
+            platform.handle_event(imgui.io_mut(), &state.window, &event);
 
             // Update internal state and request a redraw
             self.world.update(delta_time);
