@@ -40,6 +40,8 @@ impl<T> From<Vector2<T>> for (T, T) {
 }
 
 impl Vector2<f64> {
+    pub const ZERO: Vector2<f64> = Vector2 { x: 0.0, y: 0.0 };
+
     pub fn with_magnitude(&self, magnitude: f64) -> Vector2f {
         magnitude * self.normalized()
     }

@@ -79,11 +79,11 @@ impl App {
                         self.world.add_blob(x, y);
                     }
                 }
-    
-                // Update internal state and request a redraw
-                self.world.update(delta_time);
-                state.window.request_redraw();
             }
+
+            // Update internal state and request a redraw
+            self.world.update(delta_time);
+            state.window.request_redraw();            
         });
     }
 }

@@ -4,6 +4,8 @@ use crate::{
     config::Config,
 };
 
+const WHITE: [u8; 4] = [255, 255, 255, 255];
+
 pub struct World {
     pub width: usize,
     pub height: usize,
@@ -13,12 +15,10 @@ pub struct World {
 
 impl World {
     pub fn refresh_config(&mut self) -> anyhow::Result<()> {
-        let config = Config::load_default_config_file()?;
+        let new_config = Config::load_default_config_file()?;
+        self.config.print_config_diff(&new_config);
 
-        println!("Config refreshed");
-        dbg!(&self.config);
-
-        self.config = config;
+        self.config = new_config;
         Ok(())
     }
 
@@ -73,7 +73,13 @@ impl World {
             }
 
             let drag = blob.velocity.clone() * self.config.friction_force * delta_time;
-            blob.acceleration -= drag;
+            let acceleration_magnitude = blob.acceleration.magnitude();
+            if acceleration_magnitude >= drag.magnitude() {
+                blob.acceleration -= drag;
+            }
+            if acceleration_magnitude < self.config.min_acceleration {
+                blob.acceleration = Vector2f::ZERO;
+            }
 
             blob.velocity.x += blob.acceleration.x * delta_time;
             blob.velocity.y += blob.acceleration.y * delta_time;
@@ -100,7 +106,7 @@ impl World {
 
             if end <= frame.len() {
                 let pixels = &mut frame[start..end];
-                pixels.copy_from_slice(&[255, 255, 255, 255]);    
+                pixels.copy_from_slice(&WHITE);    
             }
         }
     }

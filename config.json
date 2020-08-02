@@ -1,7 +1,8 @@
 {
     "blob_size": 5.0,
-    "repel_force": 50.0,
-    "repel_distance": 20.0,
-    "friction_force": 0.1,
-    "max_acceleration": 10000.0
+    "repel_force": 15.0,
+    "repel_distance": 10.0,
+    "friction_force": 1.0,
+    "max_acceleration": 10000.0,
+    "min_acceleration": 0.001
 }

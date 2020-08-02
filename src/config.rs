@@ -14,6 +14,15 @@ pub struct Config {
     pub repel_distance: f64,
     pub friction_force: f64,
     pub max_acceleration: f64,
+    pub min_acceleration: f64,
+}
+
+macro_rules! print_config_diff {
+    ($item:expr, $new:expr) => {
+        if $item != $new {
+            println!("{} => {}", stringify!($item), $new);            
+        }
+    };
 }
 
 impl Config {
@@ -28,5 +37,14 @@ impl Config {
 
     pub fn load_default_config_file() -> anyhow::Result<Self> {
         Config::load_file(DEFAULT_CONFIG_FILE_NAME)
+    }
+
+    pub fn print_config_diff(&self, new: &Config) {
+        print_config_diff!(self.blob_size, new.blob_size);
+        print_config_diff!(self.repel_force, new.repel_force);
+        print_config_diff!(self.repel_distance, new.repel_distance);
+        print_config_diff!(self.friction_force, new.friction_force);
+        print_config_diff!(self.max_acceleration, new.max_acceleration);
+        print_config_diff!(self.min_acceleration, new.min_acceleration);
     }
 }
