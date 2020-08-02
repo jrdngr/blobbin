@@ -13,11 +13,11 @@ const WIDTH: u32 = 500;
 const HEIGHT: u32 = 500;
 const BLOB_SIZE: f64 = 5.0;
 
-const BLOB_COUNT: usize = 10;
+const BLOB_COUNT: usize = 100;
 
-const REPEL_FORCE: f64 = 1.0;
-const REPEL_DISTANCE: f64 = 50.0;
-const FRICTION_FORCE: f64 = 0.25;
+const REPEL_FORCE: f64 = 0.0001;
+const REPEL_DISTANCE: f64 = 20.0;
+const FRICTION_FORCE: f64 = 0.025;
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
@@ -69,6 +69,14 @@ fn main() -> anyhow::Result<()> {
                 pixels.resize(size.width, size.height);
             }
 
+            if input.mouse_released(0) {
+                if let Some((x, y)) = input.mouse() {
+                    let x = (x / 2.0) as f64;
+                    let y = (y / 2.0) as f64;
+                    world.blobs.push(Blob::new(world.blobs.len(), (x, y)));
+                }
+            }
+
             // Update internal state and request a redraw
             world.update();
             window.request_redraw();
@@ -102,7 +110,7 @@ impl Blob {
 }
 
 pub struct World {
-    blobs: Vec<Blob>
+    pub blobs: Vec<Blob>
 }
 
 impl World {
@@ -152,11 +160,7 @@ impl World {
                 blob.velocity.y *= -1.0;
             }
 
-            if blob.acceleration.magnitude() >= 0.1 {
-                blob.acceleration -= FRICTION_FORCE;
-            } else {
-                blob.acceleration = (0.0, 0.0).into();
-            }
+            blob.acceleration /= FRICTION_FORCE;
 
             blob.velocity.x += blob.acceleration.x;
             blob.velocity.y += blob.acceleration.y;

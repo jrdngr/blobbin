@@ -1,6 +1,6 @@
 pub struct Grid<T> {
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
     cells: Vec<T>,
 }
 
@@ -32,7 +32,7 @@ impl<T, I: Into<(usize, usize)>> std::ops::IndexMut<I> for Grid<T> {
 
 impl<T> Grid<T> {
     #[inline]
-    fn index_to_position(&self, index: usize) -> (usize, usize) {
+    fn _index_to_position(&self, index: usize) -> (usize, usize) {
         let x = index % self.width;
         let y = index / self.height;
         
