@@ -1,5 +1,6 @@
 pub mod app;
 pub mod blob;
+pub mod ecs;
 pub mod math;
 pub mod world;
 
