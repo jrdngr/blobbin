@@ -33,7 +33,7 @@ impl World {
     }
 
     /// Update the `World` internal state; bounce the box around the screen.
-    pub fn update(&mut self) {
+    pub fn update(&mut self, delta_time: f64) {
         for index in 0..self.blobs.len() {
             let blob = &self.blobs[index];
             let mut blob_forces: Vec<Vector2f> = Vec::new();
@@ -50,7 +50,7 @@ impl World {
             let blob = &mut self.blobs[index];
 
             for force in blob_forces {
-                blob.acceleration += force;
+                blob.acceleration += force * delta_time;
             }
 
             if blob.position.x <= 0.0 || blob.position.x + self.blob_size > self.width as f64 {
@@ -61,13 +61,13 @@ impl World {
                 blob.velocity.y *= -1.0;
             }
 
-            blob.acceleration /= self.friction_force;
+            blob.acceleration /= self.friction_force * delta_time;
 
-            blob.velocity.x += blob.acceleration.x;
-            blob.velocity.y += blob.acceleration.y;
+            blob.velocity.x += blob.acceleration.x * delta_time;
+            blob.velocity.y += blob.acceleration.y * delta_time;
 
-            blob.position.x += blob.velocity.x;
-            blob.position.y += blob.velocity.y;
+            blob.position.x += blob.velocity.x * delta_time;
+            blob.position.y += blob.velocity.y * delta_time;
 
             blob.position.x = math::clamp(blob.position.x, 0.0, self.width as f64);
             blob.position.y = math::clamp(blob.position.y, 0.0, self.height as f64);
