@@ -73,13 +73,7 @@ impl World {
             }
 
             let drag = blob.velocity.clone() * self.config.friction_force * delta_time;
-            let acceleration_magnitude = blob.acceleration.magnitude();
-            if acceleration_magnitude >= drag.magnitude() {
-                blob.acceleration -= drag;
-            }
-            if acceleration_magnitude < self.config.min_acceleration {
-                blob.acceleration = Vector2f::ZERO;
-            }
+            blob.acceleration -= drag;
 
             blob.velocity.x += blob.acceleration.x * delta_time;
             blob.velocity.y += blob.acceleration.y * delta_time;

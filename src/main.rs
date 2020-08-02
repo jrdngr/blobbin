@@ -12,7 +12,7 @@ use world::World;
 const WIDTH: u32 = 500;
 const HEIGHT: u32 = 500;
 
-const BLOB_COUNT: usize = 50;
+const BLOB_COUNT: usize = 10;
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
