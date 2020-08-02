@@ -10,7 +10,7 @@ const WIDTH: u32 = 500;
 const HEIGHT: u32 = 500;
 const BLOB_SIZE: f64 = 5.0;
 
-const BLOB_COUNT: usize = 10;
+const BLOB_COUNT: usize = 50;
 
 const REPEL_FORCE: f64 = 0.1;
 const REPEL_DISTANCE: f64 = 20.0;

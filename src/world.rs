@@ -79,40 +79,30 @@ impl World {
         }
     }
 
-    fn pixel_color(&self, index: usize) -> [u8; 4] {
-        let position = index_to_position(index, self.width, self.height);
-        for blob in &self.blobs {
-            if blob.contains_point(&position) {
-                return [255, 255, 255, 255];
-            }
-        }
-
-        [0, 0, 0, 0]
-    }
-
     /// Draw the `World` state to the frame buffer.
     ///
     /// Assumes the default texture format: [`wgpu::TextureFormat::Rgba8UnormSrgb`]
     pub fn draw(&self, frame: &mut [u8]) {
-        for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-            pixel.copy_from_slice(&self.pixel_color(i));
+        for item in frame.iter_mut() {
+            *item = 0;
+        }
+
+        for blob in &self.blobs {
+            let start = self.position_to_index(&blob.position);
+            let end = start + 4;
+
+            if end <= frame.len() {
+                let pixels = &mut frame[start..end];
+                pixels.copy_from_slice(&[255, 255, 255, 255]);    
+            }
         }
     }
-}
 
-#[inline]
-fn index_to_position(index: usize, width: usize, height: usize) -> Vector2f {
-    let x = index % width;
-    let y = index / height;
-    
-    (x as f64, y as f64).into()
-}
+    #[inline]
+    fn position_to_index(&self, position: &Vector2f) -> usize {
+        let index = position.y as usize * self.height + position.x as usize;
 
-#[inline]
-fn _position_to_index(position: impl Into<Vector2f>, height: u32) -> usize {
-    let position = position.into();
-
-    let index = position.y as u32 * height + position.x as u32;
-
-    index as usize
+        // 4 bytes per pixel color
+        4 * index
+    }
 }
