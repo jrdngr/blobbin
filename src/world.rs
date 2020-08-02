@@ -11,40 +11,6 @@ pub struct World {
 }
 
 impl World {
-    /// Create a new `World` instance that can draw a moving box.
-    pub fn new(width: usize, height: usize, blob_size: f64) -> Self {
-
-        Self {
-            width,
-            height,
-            blob_size,
-            repel_force: 0.0,
-            repel_distance: 0.0,
-            friction_force: 0.0,
-            blobs: Vec::new(),
-        }
-    }
-
-    pub fn blob_size(&mut self, size: f64) -> &mut Self {
-        self.blob_size = size;
-        self
-    }
-
-    pub fn repel_force(&mut self, force: f64) -> &mut Self {
-        self.repel_force = force;
-        self
-    }
-
-    pub fn repel_distance(&mut self, distance: f64) -> &mut Self {
-        self.repel_distance = distance;
-        self
-    }
-
-    pub fn friction_force(&mut self, force: f64) -> &mut Self {
-        self.friction_force = force;
-        self
-    }
-
     pub fn add_blob(&mut self, x: f64, y: f64) {
         let id = self.blobs.len();
         self.blobs.push(Blob::new(id, self.blob_size, (x, y)));

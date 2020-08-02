@@ -1,18 +1,17 @@
 use pixels::{wgpu::Surface, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
-use winit::event_loop::EventLoop;
+use winit::event_loop::EventLoopWindowTarget;
 use winit::window::{Window, WindowBuilder};
 use winit_input_helper::WinitInputHelper;
 
-pub(crate) struct AppState {
+pub struct AppState {
     pub window: Window,
     pub input: WinitInputHelper,
     pub pixels: Pixels,
 }
 
 impl AppState {
-    pub fn new(width: u32, height: u32) -> anyhow::Result<(Self, EventLoop<()>)> {
-        let event_loop = EventLoop::new();
+    pub fn new(width: u32, height: u32, event_loop: &EventLoopWindowTarget<()>) -> anyhow::Result<Self> {
         let input = WinitInputHelper::new();
         let window = {
             let size = LogicalSize::new(width as f64, height as f64);
@@ -37,6 +36,6 @@ impl AppState {
             pixels,
         };
 
-        Ok((state, event_loop))
+        Ok(state)
     }
 }
