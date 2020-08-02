@@ -8,11 +8,13 @@ pub use state::AppState;
 use crate::world::World;
 
 const FRAME_TIME: u64 = 1000 / 60;
+const CONFIG_REFRESH_RATE: Duration = Duration::from_secs(5);
 
 pub struct App {
     world: World,
     last_event: Instant,
     last_frame: Instant,
+    last_config_refresh: Instant,
 }
 
 impl App {
@@ -21,6 +23,7 @@ impl App {
             world,
             last_event: Instant::now(),
             last_frame: Instant::now(),
+            last_config_refresh: Instant::now(),
         }
     }
 
@@ -33,6 +36,11 @@ impl App {
             let current_event = Instant::now();
             let delta_time = (current_event - self.last_event).as_secs_f64();
             self.last_event = current_event;
+
+            if current_event - self.last_config_refresh >= CONFIG_REFRESH_RATE {
+                let _ = self.world.refresh_config();
+                self.last_config_refresh = current_event;
+            }
 
             // Draw the current frame
             if let Event::RedrawRequested(_) = event {

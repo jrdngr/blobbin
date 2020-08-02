@@ -37,13 +37,6 @@ macro_rules! vector2_impl {
             }
         }
         
-        impl std::ops::AddAssign<$impl_type> for Vector2<$impl_type> {
-            fn add_assign(&mut self, rhs: $impl_type) {
-                self.x += rhs;
-                self.y += rhs;
-            }
-        }
-        
         impl std::ops::Sub<&Vector2<$impl_type>> for &Vector2<$impl_type> {
             type Output = Vector2<$impl_type>;
         
@@ -77,13 +70,6 @@ macro_rules! vector2_impl {
             fn sub_assign(&mut self, rhs: Vector2<$impl_type>) {
                 self.x -= rhs.x;
                 self.y -= rhs.y;
-            }
-        }
-        
-        impl std::ops::SubAssign<$impl_type> for Vector2<$impl_type> {
-            fn sub_assign(&mut self, rhs: $impl_type) {
-                self.x -= rhs;
-                self.y -= rhs;
             }
         }
         

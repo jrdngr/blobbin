@@ -1,21 +1,30 @@
-use crate::{math::{self, Vector2f}, blob::Blob};
-
-const MAX_ACCELERATION: f64 = 10000.0;
+use crate::{
+    math::{self, Vector2f}, 
+    blob::Blob,
+    config::Config,
+};
 
 pub struct World {
     pub width: usize,
     pub height: usize,
-    pub blob_size: f64,
-    pub repel_force: f64,
-    pub repel_distance: f64,
-    pub friction_force: f64,
+    pub config: Config,
     pub blobs: Vec<Blob>
 }
 
 impl World {
+    pub fn refresh_config(&mut self) -> anyhow::Result<()> {
+        let config = Config::load_default_config_file()?;
+
+        println!("Config refreshed");
+        dbg!(&self.config);
+
+        self.config = config;
+        Ok(())
+    }
+
     pub fn add_blob(&mut self, x: f64, y: f64) {
         let id = self.blobs.len();
-        self.blobs.push(Blob::new(id, self.blob_size, (x, y)));
+        self.blobs.push(Blob::new(id, self.config.blob_size, (x, y)));
     }
 
     pub fn add_random_blob(&mut self) {
@@ -43,8 +52,8 @@ impl World {
             for other in &self.blobs {
                 if blob.id != other.id {
                     let force_vector = blob.position.vector_to(&other.position);
-                    if force_vector.magnitude() <= self.repel_distance {
-                        blob_forces.push(self.repel_force * force_vector.normalized());
+                    if force_vector.magnitude() <= self.config.repel_distance {
+                        blob_forces.push(self.config.repel_force * force_vector.normalized());
                     }    
                 }
             }
@@ -55,18 +64,16 @@ impl World {
                 blob.acceleration += force * delta_time;
             }
 
-            if blob.position.x <= 0.0 || blob.position.x + self.blob_size > self.width as f64 {
+            if blob.position.x <= 0.0 || blob.position.x + self.config.blob_size > self.width as f64 {
                 blob.velocity.x *= -1.0;
             }
             
-            if blob.position.y <= 0.0 || blob.position.y + self.blob_size > self.height as f64 {
+            if blob.position.y <= 0.0 || blob.position.y + self.config.blob_size > self.height as f64 {
                 blob.velocity.y *= -1.0;
             }
 
-            blob.acceleration /= self.friction_force * delta_time;
-            if blob.acceleration.magnitude() > MAX_ACCELERATION {
-                blob.acceleration = blob.acceleration.with_magnitude(MAX_ACCELERATION);
-            }
+            let drag = blob.velocity.clone() * self.config.friction_force * delta_time;
+            blob.acceleration -= drag;
 
             blob.velocity.x += blob.acceleration.x * delta_time;
             blob.velocity.y += blob.acceleration.y * delta_time;
