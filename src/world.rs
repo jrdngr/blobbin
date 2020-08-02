@@ -1,5 +1,7 @@
 use crate::{math::{self, Vector2f}, blob::Blob};
 
+const MAX_ACCELERATION: f64 = 10000.0;
+
 pub struct World {
     pub width: usize,
     pub height: usize,
@@ -62,6 +64,9 @@ impl World {
             }
 
             blob.acceleration /= self.friction_force * delta_time;
+            if blob.acceleration.magnitude() > MAX_ACCELERATION {
+                blob.acceleration = blob.acceleration.with_magnitude(MAX_ACCELERATION);
+            }
 
             blob.velocity.x += blob.acceleration.x * delta_time;
             blob.velocity.y += blob.acceleration.y * delta_time;

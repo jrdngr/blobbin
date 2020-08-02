@@ -38,3 +38,9 @@ impl<T> From<Vector2<T>> for (T, T) {
         (vector.x, vector.y)
     }
 }
+
+impl Vector2<f64> {
+    pub fn with_magnitude(&self, magnitude: f64) -> Vector2f {
+        magnitude * self.normalized()
+    }
+}

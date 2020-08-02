@@ -10,11 +10,11 @@ const WIDTH: u32 = 500;
 const HEIGHT: u32 = 500;
 const BLOB_SIZE: f64 = 5.0;
 
-const BLOB_COUNT: usize = 100;
+const BLOB_COUNT: usize = 10;
 
-const REPEL_FORCE: f64 = 0.0001;
+const REPEL_FORCE: f64 = 0.1;
 const REPEL_DISTANCE: f64 = 20.0;
-const FRICTION_FORCE: f64 = 0.025;
+const FRICTION_FORCE: f64 = 1000.0;
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
