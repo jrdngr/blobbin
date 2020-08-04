@@ -70,7 +70,7 @@ struct State {
     swap_chain: wgpu::SwapChain,
     size: winit::dpi::PhysicalSize<u32>,
 
-    clear_color: wgpu::Color,
+    render_pipeline: wgpu::RenderPipeline,
 }
 
 impl State {
@@ -103,12 +103,58 @@ impl State {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
-        let clear_color = wgpu::Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        };
+        let vs_src = include_str!("wgpu_tutorial/shader.vert");
+        let fs_src = include_str!("wgpu_tutorial/shader.frag");
+
+        let mut compiler = shaderc::Compiler::new().unwrap();
+        let vs_spirv = compiler.compile_into_spirv(vs_src, shaderc::ShaderKind::Vertex, "shader.vert", "main", None).unwrap();
+        let fs_spirv = compiler.compile_into_spirv(fs_src, shaderc::ShaderKind::Fragment, "shader.frag", "main", None).unwrap();
+
+        let vs_data = wgpu::read_spirv(std::io::Cursor::new(vs_spirv.as_binary_u8())).unwrap();
+        let fs_data = wgpu::read_spirv(std::io::Cursor::new(fs_spirv.as_binary_u8())).unwrap();
+
+        let vs_module = device.create_shader_module(&vs_data);
+        let fs_module = device.create_shader_module(&fs_data);
+
+        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            bind_group_layouts: &[],
+        });
+        
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            layout: &render_pipeline_layout,
+            vertex_stage: wgpu::ProgrammableStageDescriptor {
+                module: &vs_module,
+                entry_point: "main", // 1.
+            },
+            fragment_stage: Some(wgpu::ProgrammableStageDescriptor { // 2.
+                module: &fs_module,
+                entry_point: "main",
+            }),
+            rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: wgpu::CullMode::Back,
+                depth_bias: 0,
+                depth_bias_slope_scale: 0.0,
+                depth_bias_clamp: 0.0,
+            }),
+            color_states: &[
+                wgpu::ColorStateDescriptor {
+                    format: sc_desc.format,
+                    color_blend: wgpu::BlendDescriptor::REPLACE,
+                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                    write_mask: wgpu::ColorWrite::ALL,
+                },
+            ],
+            primitive_topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+            depth_stencil_state: None, // 2.
+            vertex_state: wgpu::VertexStateDescriptor {
+                index_format: wgpu::IndexFormat::Uint16, // 3.
+                vertex_buffers: &[], // 4.
+            },
+            sample_count: 1, // 5.
+            sample_mask: !0, // 6.
+            alpha_to_coverage_enabled: false, // 7.
+        });        
 
         Self {
             surface,
@@ -118,7 +164,7 @@ impl State {
             sc_desc,
             swap_chain,
             size,
-            clear_color,
+            render_pipeline,
         }
     }
 
@@ -131,17 +177,6 @@ impl State {
 
     // input() won't deal with GPU code, so it can be synchronous
     fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::CursorMoved{ position, .. } => {
-                let r = position.x / self.size.width as f64;
-                let g = position.y / self.size.width as f64;
-                let b = r * g;
-
-                self.clear_color = wgpu::Color { r, g, b, a: 1.0 };
-            },
-            _ => {},
-        }
-
         false
     }
 
@@ -158,18 +193,26 @@ impl State {
         });
     
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[
                     wgpu::RenderPassColorAttachmentDescriptor {
                         attachment: &frame.view,
                         resolve_target: None,
                         load_op: wgpu::LoadOp::Clear,
                         store_op: wgpu::StoreOp::Store,
-                        clear_color: self.clear_color,
+                        clear_color: wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 0.0,
+                        },
                     }
                 ],
                 depth_stencil_attachment: None,
             });
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.draw(0..3, 0..1);
         }
 
         self.queue.submit(&[
