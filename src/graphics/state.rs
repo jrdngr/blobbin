@@ -4,6 +4,8 @@ use winit::{event::*, window::Window};
 use crate::graphics::{shaders, ShaderCompiler, Vertex};
 
 pub struct State {
+    options: GraphicsOptions,
+
     surface: wgpu::Surface,
     _adapter: wgpu::Adapter,
     device: wgpu::Device,
@@ -19,7 +21,7 @@ pub struct State {
 }
 
 impl State {
-    pub async fn new(window: &Window) -> anyhow::Result<Self> {
+    pub async fn new(window: &Window, options: GraphicsOptions) -> anyhow::Result<Self> {
         let size = window.inner_size();
 
         let surface = wgpu::Surface::create(window);
@@ -104,6 +106,7 @@ impl State {
         let num_indices = INDICES.len() as u32;
 
         Ok(Self {
+            options,
             surface,
             _adapter: adapter,
             device,
@@ -125,7 +128,6 @@ impl State {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    // input() won't deal with GPU code, so it can be synchronous
     pub fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
@@ -153,12 +155,7 @@ impl State {
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
-                    },
+                    clear_color: self.options.clear_color,
                 }],
                 depth_stencil_attachment: None,
             });
@@ -170,6 +167,24 @@ impl State {
         }
 
         self.queue.submit(&[encoder.finish()]);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct GraphicsOptions {
+    pub clear_color: wgpu::Color,
+}
+
+impl Default for GraphicsOptions {
+    fn default() -> Self {
+        Self {
+            clear_color: wgpu::Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                a: 1.0,
+            }
+        }
     }
 }
 
