@@ -10,13 +10,15 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::graphics::{State, GraphicsOptions};
+use crate::{
+    graphics::{GraphicsConfig, State},
+};
 
 pub fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop)?;
 
-    let mut state = block_on(State::new(&window, GraphicsOptions::default()))?;
+    let mut state = block_on(State::new(&window, GraphicsConfig::default()))?;
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
