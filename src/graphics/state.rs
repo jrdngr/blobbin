@@ -5,7 +5,7 @@ use crate::graphics::{shaders, ShaderCompiler, Vertex};
 
 pub struct State {
     surface: wgpu::Surface,
-    adapter: wgpu::Adapter,
+    _adapter: wgpu::Adapter,
     device: wgpu::Device,
     queue: wgpu::Queue,
     sc_desc: wgpu::SwapChainDescriptor,
@@ -101,12 +101,11 @@ impl State {
         let index_buffer =
             device.create_buffer_with_data(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
 
-        let num_vertices = VERTICES.len() as u32;
         let num_indices = INDICES.len() as u32;
 
         Ok(Self {
             surface,
-            adapter,
+            _adapter: adapter,
             device,
             queue,
             sc_desc,
@@ -127,7 +126,7 @@ impl State {
     }
 
     // input() won't deal with GPU code, so it can be synchronous
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
+    pub fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
 
