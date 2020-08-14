@@ -1,4 +1,4 @@
-use crate::math::Vector2f;
+use crate::common::math::Vector2f;
 
 #[derive(Default, Debug, Clone)]
 pub struct Blob {

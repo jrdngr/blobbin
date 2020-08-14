@@ -1,4 +1,4 @@
-use pixels::{wgpu::Surface, Pixels, SurfaceTexture};
+use wgpu::Surface;
 use winit::dpi::LogicalSize;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::{Window, WindowBuilder};

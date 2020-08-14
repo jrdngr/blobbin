@@ -1,7 +1,7 @@
 use crate::{
-    math::{self, Vector2f}, 
-    blob::Blob,
-    config::Config,
+    common::math::{self, Vector2f}, 
+    app::Blob,
+    common::config::Config,
 };
 
 const WHITE: [u8; 4] = [255, 255, 255, 255];

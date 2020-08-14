@@ -1,12 +1,8 @@
 pub mod app;
-pub mod blob;
-pub mod config;
+pub mod common;
 pub mod ecs;
-pub mod math;
-pub mod world;
-use app::App;
-use config::Config;
-use world::World;
+use app::{App, World};
+use common::config::Config;
 
 const WIDTH: u32 = 500;
 const HEIGHT: u32 = 500;

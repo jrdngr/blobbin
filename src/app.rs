@@ -1,11 +1,14 @@
 pub mod state;
+pub mod blob;
+pub mod world;
 
 use std::time::{Instant, Duration};
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{EventLoop, ControlFlow};
 
+pub use blob::Blob;
 pub use state::AppState;
-use crate::world::World;
+pub use world::World;
 
 const FRAME_TIME: u64 = 1000 / 60;
 const CONFIG_REFRESH_RATE: Duration = Duration::from_secs(5);
