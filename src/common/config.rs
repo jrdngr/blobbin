@@ -1,9 +1,5 @@
-use std::{
-    path::Path,
-    io::BufReader,
-    fs::File,
-};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{fs::File, io::BufReader, path::Path};
 
 pub const DEFAULT_CONFIG_FILE_NAME: &str = "config.json";
 
@@ -20,7 +16,7 @@ pub struct Config {
 macro_rules! print_config_diff {
     ($item:expr, $new:expr) => {
         if $item != $new {
-            println!("{} => {}", stringify!($item), $new);            
+            println!("{} => {}", stringify!($item), $new);
         }
     };
 }

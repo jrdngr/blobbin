@@ -35,7 +35,7 @@ impl<T> Grid<T> {
     fn _index_to_position(&self, index: usize) -> (usize, usize) {
         let x = index % self.width;
         let y = index / self.height;
-        
+
         (x, y)
     }
 
