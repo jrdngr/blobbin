@@ -1,6 +1,6 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController};
+use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController, color};
 
 pub struct State {
     config: GraphicsConfig,
@@ -58,7 +58,7 @@ impl State {
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
     
         let camera = Camera {
-            eye: (0.0, 1.0, 10.0).into(),
+            eye: (0.0, 1.0, 50.0).into(),
             up: cgmath::Vector3::unit_y(),
             aspect: sc_desc.width as f32 / sc_desc.height as f32,
             fovy: 45.0,
@@ -150,7 +150,7 @@ impl State {
             alpha_to_coverage_enabled: false,
         });
 
-        let circle = shape::Shape::circle([1.0, 1.0, 1.0], 50);
+        let circle = shape::Shape::circle(color::random_blue(), 50);
 
         let vertex_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&circle.vertices),

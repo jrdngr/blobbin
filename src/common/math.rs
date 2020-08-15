@@ -14,3 +14,13 @@ pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {
         value
     }
 }
+
+#[inline]
+pub fn clamp_f32_normalized(value: f32) -> f32 {
+    clamp(value, 0.0, 1.0)
+}
+
+#[inline]
+pub fn clamp_f64_normalized(value: f64) -> f64 {
+    clamp(value, 0.0, 1.0)
+}

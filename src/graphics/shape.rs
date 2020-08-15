@@ -1,4 +1,4 @@
-use crate::graphics::Vertex;
+use crate::graphics::{Color, Vertex};
 
 #[derive(Clone, Debug)]
 pub struct Shape {
@@ -7,7 +7,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn triangle(color: [f32; 3]) -> Self {
+    pub fn triangle(color: Color) -> Self {
         let vertices = vec![
             Vertex::new_2d(0.0, 0.5, color),
             Vertex::new_2d(-0.5, -0.5, color),
@@ -22,7 +22,7 @@ impl Shape {
         }
     }
 
-    pub fn square(color: [f32; 3]) -> Self {
+    pub fn square(color: Color) -> Self {
         let vertices = vec![
             Vertex::new_2d(-1.0, -1.0, color),
             Vertex::new_2d(1.0, -1.0, color),
@@ -42,7 +42,7 @@ impl Shape {
         }
     }
 
-    pub fn circle(color: [f32; 3], resolution: u16) -> Self {
+    pub fn circle(color: Color, resolution: u16) -> Self {
         use std::f32::consts::PI;
 
         // Any less than 3 and we can't really draw anything useful

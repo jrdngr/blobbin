@@ -1,15 +1,17 @@
+use crate::graphics::Color;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub color: [f32; 3],
+    pub color: Color,
 }
 
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
 impl Vertex {
-    pub fn new_2d(x: f32, y: f32, color: [f32; 3]) -> Self {
+    pub fn new_2d(x: f32, y: f32, color: Color) -> Self {
         Self {
             position: [x, y, 0.0],
             color,
