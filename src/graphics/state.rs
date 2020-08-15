@@ -1,12 +1,13 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController, color};
+use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController, color, Instance, InstanceRaw};
 
 pub struct State {
     config: GraphicsConfig,
     camera: Camera,
     camera_controller: CameraController,
     uniforms: Uniforms,
+    instances: Vec<Instance>,
     gpu: GpuState,
     size: winit::dpi::PhysicalSize<u32>,
 }
@@ -25,6 +26,8 @@ struct GpuState {
 
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
+    
+    instance_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -70,7 +73,24 @@ impl State {
 
         let mut uniforms = Uniforms::new();
         uniforms.update_view_proj(&camera);
-    
+
+        let mut instances = Vec::new();
+        let position = cgmath::Vector3 { x: 0.0, y: 0.0, z: 0.0};
+        use cgmath::Rotation3;
+        let rotation =  cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
+
+        instances.push(Instance {
+            position, rotation,
+        });
+        
+        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        // we'll need the size for later
+        let instance_buffer_size = instance_data.len() * std::mem::size_of::<cgmath::Matrix4<f32>>();
+        let instance_buffer = device.create_buffer_with_data(
+            bytemuck::cast_slice(&instance_data),
+            wgpu::BufferUsage::STORAGE_READ,
+        );
+        
         let uniform_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&[uniforms]),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -83,6 +103,16 @@ impl State {
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer {
                         dynamic: false,
+                    },
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::StorageBuffer {
+                        // We don't plan on changing the size of this buffer
+                        dynamic: false,
+                        // The shader is not allowed to modify it's contents
+                        readonly: true,
                     },
                 }
             ],
@@ -98,8 +128,15 @@ impl State {
                         buffer: &uniform_buffer,
                         // FYI: you can share a single buffer between bindings.
                         range: 0..std::mem::size_of_val(&uniforms) as wgpu::BufferAddress,
+                    },
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &instance_buffer,
+                        range: 0..instance_buffer_size as wgpu::BufferAddress,
                     }
-                }
+                },
             ],
             label: Some("uniform_bind_group"),
         });
@@ -167,6 +204,7 @@ impl State {
             camera,
             camera_controller,
             uniforms,
+            instances,
             size,
             gpu: GpuState {
                 surface,
@@ -180,6 +218,7 @@ impl State {
                 num_indices,
                 uniform_buffer,
                 uniform_bind_group,
+                instance_buffer,
             },
         })
     }
@@ -243,7 +282,7 @@ impl State {
             render_pass.set_bind_group(0, &self.gpu.uniform_bind_group, &[]);
             render_pass.set_vertex_buffer(0, &self.gpu.vertex_buffer, 0, 0);
             render_pass.set_index_buffer(&self.gpu.index_buffer, 0, 0);
-            render_pass.draw_indexed(0..self.gpu.num_indices, 0, 0..1);
+            render_pass.draw_indexed(0..self.gpu.num_indices, 0, 0..self.instances.len() as u32);
         }
 
         self.gpu.queue.submit(&[
