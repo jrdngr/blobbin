@@ -1,5 +1,5 @@
-use std::ops::Range;
 use crate::common::math;
+use std::ops::Range;
 
 pub type Color = [f32; 3];
 
@@ -25,15 +25,27 @@ pub fn random_grayscale() -> Color {
 }
 
 pub fn random_red() -> Color {
-    random_color_range(PRIMARY_MIN..PRIMARY_MAX, SECONDARY_MIN..SECONDARY_MAX, SECONDARY_MIN..SECONDARY_MAX)
+    random_color_range(
+        PRIMARY_MIN..PRIMARY_MAX,
+        SECONDARY_MIN..SECONDARY_MAX,
+        SECONDARY_MIN..SECONDARY_MAX,
+    )
 }
 
 pub fn random_green() -> Color {
-    random_color_range(SECONDARY_MIN..SECONDARY_MAX, PRIMARY_MIN..PRIMARY_MAX, SECONDARY_MIN..SECONDARY_MAX)
+    random_color_range(
+        SECONDARY_MIN..SECONDARY_MAX,
+        PRIMARY_MIN..PRIMARY_MAX,
+        SECONDARY_MIN..SECONDARY_MAX,
+    )
 }
 
 pub fn random_blue() -> Color {
-    random_color_range(SECONDARY_MIN..SECONDARY_MAX, SECONDARY_MIN..SECONDARY_MAX, PRIMARY_MIN..PRIMARY_MAX)
+    random_color_range(
+        SECONDARY_MIN..SECONDARY_MAX,
+        SECONDARY_MIN..SECONDARY_MAX,
+        PRIMARY_MIN..PRIMARY_MAX,
+    )
 }
 
 pub fn random_color() -> Color {
@@ -43,7 +55,11 @@ pub fn random_color() -> Color {
     [r, g, b]
 }
 
-pub fn random_color_range(red_range: Range<f32>, green_range: Range<f32>, blue_range: Range<f32>) -> Color {
+pub fn random_color_range(
+    red_range: Range<f32>,
+    green_range: Range<f32>,
+    blue_range: Range<f32>,
+) -> Color {
     use rand::Rng;
     let mut rng = rand::thread_rng();
 

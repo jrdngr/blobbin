@@ -1,6 +1,8 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController, color, Instance, InstanceRaw};
+use crate::graphics::{
+    color, shaders, shape, Camera, CameraController, GraphicsConfig, Instance, Uniforms, Vertex,
+};
 
 pub struct State {
     config: GraphicsConfig,
@@ -26,7 +28,7 @@ struct GpuState {
 
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
-    
+
     instance_buffer: wgpu::Buffer,
 }
 
@@ -42,14 +44,18 @@ impl State {
                 compatible_surface: Some(&surface),
             },
             wgpu::BackendBit::PRIMARY, // Vulkan + Metal + DX12 + Browser WebGPU
-        ).await.unwrap();
-    
-        let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            extensions: wgpu::Extensions {
-                anisotropic_filtering: false,
-            },
-            limits: Default::default(),
-        }).await;
+        )
+        .await
+        .unwrap();
+
+        let (device, queue) = adapter
+            .request_device(&wgpu::DeviceDescriptor {
+                extensions: wgpu::Extensions {
+                    anisotropic_filtering: false,
+                },
+                limits: Default::default(),
+            })
+            .await;
 
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
@@ -59,7 +65,7 @@ impl State {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
-    
+
         let camera = Camera {
             eye: (0.0, 1.0, 50.0).into(),
             up: cgmath::Vector3::unit_y(),
@@ -75,50 +81,56 @@ impl State {
         uniforms.update_view_proj(&camera);
 
         let mut instances = Vec::new();
-        let position = cgmath::Vector3 { x: 0.0, y: 0.0, z: 0.0};
+        let position = cgmath::Vector3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         use cgmath::Rotation3;
-        let rotation =  cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
+        let rotation =
+            cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
 
-        instances.push(Instance {
-            position, rotation,
-        });
-        
+        // Make sure if you add new instances to the Vec that you recreate the instance_buffer and as well as uniform_bind_group, 
+        // otherwise you're new instances won't show up correctly.
+
+        instances.push(Instance { position, rotation });
+
         let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         // we'll need the size for later
-        let instance_buffer_size = instance_data.len() * std::mem::size_of::<cgmath::Matrix4<f32>>();
+        let instance_buffer_size =
+            instance_data.len() * std::mem::size_of::<cgmath::Matrix4<f32>>();
         let instance_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&instance_data),
             wgpu::BufferUsage::STORAGE_READ,
         );
-        
+
         let uniform_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&[uniforms]),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
-    
-        let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: false,
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::StorageBuffer {
-                        // We don't plan on changing the size of this buffer
-                        dynamic: false,
-                        // The shader is not allowed to modify it's contents
-                        readonly: true,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::StorageBuffer {
+                            // We don't plan on changing the size of this buffer
+                            dynamic: false,
+                            // The shader is not allowed to modify it's contents
+                            readonly: true,
+                        },
                     },
-                }
-            ],
-            label: Some("uniform_bind_group_layout"),
-        });
-    
+                ],
+                label: Some("uniform_bind_group_layout"),
+            });
+
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             bindings: &[
@@ -135,20 +147,21 @@ impl State {
                     resource: wgpu::BindingResource::Buffer {
                         buffer: &instance_buffer,
                         range: 0..instance_buffer_size as wgpu::BufferAddress,
-                    }
+                    },
                 },
             ],
             label: Some("uniform_bind_group"),
         });
-    
+
         let mut compiler = shaders::ShaderCompiler::new()?;
         let vs_module = shaders::basic::vertex_module(&device, &mut compiler)?;
         let fs_module = shaders::basic::fragment_module(&device, &mut compiler)?;
 
-        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[&uniform_bind_group_layout],
-        });
-    
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                bind_group_layouts: &[&uniform_bind_group_layout],
+            });
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             layout: &render_pipeline_layout,
             vertex_stage: wgpu::ProgrammableStageDescriptor {
@@ -167,20 +180,16 @@ impl State {
                 depth_bias_clamp: 0.0,
             }),
             primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &[
-                wgpu::ColorStateDescriptor {
-                    format: sc_desc.format,
-                    color_blend: wgpu::BlendDescriptor::REPLACE,
-                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
-                    write_mask: wgpu::ColorWrite::ALL,
-                },
-            ],
+            color_states: &[wgpu::ColorStateDescriptor {
+                format: sc_desc.format,
+                color_blend: wgpu::BlendDescriptor::REPLACE,
+                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                write_mask: wgpu::ColorWrite::ALL,
+            }],
             depth_stencil_state: None,
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint16,
-                vertex_buffers: &[
-                    Vertex::descriptor(),
-                ],
+                vertex_buffers: &[Vertex::descriptor()],
             },
             sample_count: 1,
             sample_mask: !0,
@@ -227,7 +236,10 @@ impl State {
         self.size = new_size;
         self.gpu.sc_desc.width = new_size.width;
         self.gpu.sc_desc.height = new_size.height;
-        self.gpu.swap_chain = self.gpu.device.create_swap_chain(&self.gpu.surface, &self.gpu.sc_desc);
+        self.gpu.swap_chain = self
+            .gpu
+            .device
+            .create_swap_chain(&self.gpu.surface, &self.gpu.sc_desc);
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
@@ -237,44 +249,57 @@ impl State {
     pub fn update(&mut self) {
         self.camera_controller.update_camera(&mut self.camera);
         self.uniforms.update_view_proj(&self.camera);
-    
+
         // Copy operation's are performed on the gpu, so we'll need
         // a CommandEncoder for that
-        let mut encoder = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("update encoder"),
-        });
-    
+        let mut encoder = self
+            .gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("update encoder"),
+            });
+
         let staging_buffer = self.gpu.device.create_buffer_with_data(
             bytemuck::cast_slice(&[self.uniforms]),
             wgpu::BufferUsage::COPY_SRC,
         );
-    
-        encoder.copy_buffer_to_buffer(&staging_buffer, 0, &self.gpu.uniform_buffer, 0, std::mem::size_of::<Uniforms>() as wgpu::BufferAddress);
-    
+
+        encoder.copy_buffer_to_buffer(
+            &staging_buffer,
+            0,
+            &self.gpu.uniform_buffer,
+            0,
+            std::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
+        );
+
         // We need to remember to submit our CommandEncoder's output
         // otherwise we won't see any change.
         self.gpu.queue.submit(&[encoder.finish()]);
     }
 
     pub fn render(&mut self) {
-        let frame = self.gpu.swap_chain.get_next_texture()
+        let frame = self
+            .gpu
+            .swap_chain
+            .get_next_texture()
             .expect("Timeout getting texture");
 
-        let mut encoder = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let mut encoder = self
+            .gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[
-                    wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &frame.view,
-                        resolve_target: None,
-                        load_op: wgpu::LoadOp::Clear,
-                        store_op: wgpu::StoreOp::Store,
-                        clear_color: self.config.clear_color,
-                    }
-                ],
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &frame.view,
+                    resolve_target: None,
+                    load_op: wgpu::LoadOp::Clear,
+                    store_op: wgpu::StoreOp::Store,
+                    clear_color: self.config.clear_color,
+                }],
                 depth_stencil_attachment: None,
             });
 
@@ -285,8 +310,6 @@ impl State {
             render_pass.draw_indexed(0..self.gpu.num_indices, 0, 0..self.instances.len() as u32);
         }
 
-        self.gpu.queue.submit(&[
-            encoder.finish()
-        ]);
+        self.gpu.queue.submit(&[encoder.finish()]);
     }
 }

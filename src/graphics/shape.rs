@@ -16,10 +16,7 @@ impl Shape {
 
         let indices = vec![0, 1, 2];
 
-        Self {
-            vertices,
-            indices,
-        }
+        Self { vertices, indices }
     }
 
     pub fn square(color: Color) -> Self {
@@ -29,17 +26,14 @@ impl Shape {
             Vertex::new_2d(1.0, 1.0, color),
             Vertex::new_2d(-1.0, 1.0, color),
         ];
-        
+
         #[rustfmt::skip]
         let indices = vec![
             0, 1, 3,
             3, 1, 2,
         ];
 
-        Self {
-            vertices,
-            indices,
-        }
+        Self { vertices, indices }
     }
 
     pub fn circle(color: Color, resolution: u16) -> Self {
@@ -66,23 +60,28 @@ impl Shape {
 
         vertices.push(Vertex::new_2d(0.0, 0.0, color));
 
-        Self {
-            vertices,
-            indices,
-        }
+        Self { vertices, indices }
     }
 }
 
 use std::fmt;
 impl fmt::Display for Shape {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) ->fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "--------------")?;
         for (i, vertex) in self.vertices.iter().enumerate() {
             if i == 0 {
-                writeln!(f, "|  Color: ({}, {}, {})", vertex.color[0], vertex.color[1], vertex.color[2])?;
+                writeln!(
+                    f,
+                    "|  Color: ({}, {}, {})",
+                    vertex.color[0], vertex.color[1], vertex.color[2]
+                )?;
                 writeln!(f, "|  Vertices:")?;
             }
-            writeln!(f, "|  {} -> ({}, {})", i, vertex.position[0], vertex.position[1])?;
+            writeln!(
+                f,
+                "|  {} -> ({}, {})",
+                i, vertex.position[0], vertex.position[1]
+            )?;
         }
         writeln!(f, "--------------")?;
         write!(f, "|  Indices:")?;

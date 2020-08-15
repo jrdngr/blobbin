@@ -10,9 +10,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{
-    graphics::{GraphicsConfig, State},
-};
+use crate::graphics::{GraphicsConfig, State};
 
 pub fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new();
