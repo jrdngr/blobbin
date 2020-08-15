@@ -9,6 +9,13 @@ unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
 impl Vertex {
+    pub fn new_2d(x: f32, y: f32, color: [f32; 3]) -> Self {
+        Self {
+            position: [x, y, 0.0],
+            color,
+        }
+    }
+
     pub fn descriptor<'a>() -> wgpu::VertexBufferDescriptor<'a> {
         use std::mem;
         wgpu::VertexBufferDescriptor {

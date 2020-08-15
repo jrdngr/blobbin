@@ -1,5 +1,6 @@
 pub mod config;
 pub mod shaders;
+pub mod shape;
 pub mod state;
 pub mod vertex;
 
