@@ -6,7 +6,7 @@ pub mod state;
 pub mod uniforms;
 pub mod vertex;
 
-pub use camera::Camera;
+pub use camera::{Camera, CameraController};
 pub use config::GraphicsConfig;
 pub use shaders::ShaderCompiler;
 pub use state::State;

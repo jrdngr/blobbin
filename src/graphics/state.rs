@@ -1,10 +1,11 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms};
+use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms, CameraController};
 
 pub struct State {
     config: GraphicsConfig,
     camera: Camera,
+    camera_controller: CameraController,
     uniforms: Uniforms,
     gpu: GpuState,
     size: winit::dpi::PhysicalSize<u32>,
@@ -56,16 +57,16 @@ impl State {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
     
-    
         let camera = Camera {
             eye: (0.0, 1.0, 10.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
             aspect: sc_desc.width as f32 / sc_desc.height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
         };
+
+        let camera_controller = CameraController::new(0.2);
 
         let mut uniforms = Uniforms::new();
         uniforms.update_view_proj(&camera);
@@ -164,6 +165,7 @@ impl State {
         Ok(Self {
             config,
             camera,
+            camera_controller,
             uniforms,
             size,
             gpu: GpuState {
@@ -189,12 +191,30 @@ impl State {
         self.gpu.swap_chain = self.gpu.device.create_swap_chain(&self.gpu.surface, &self.gpu.sc_desc);
     }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
+    pub fn input(&mut self, event: &WindowEvent) -> bool {
+        self.camera_controller.process_events(event)
     }
 
     pub fn update(&mut self) {
-
+        self.camera_controller.update_camera(&mut self.camera);
+        self.uniforms.update_view_proj(&self.camera);
+    
+        // Copy operation's are performed on the gpu, so we'll need
+        // a CommandEncoder for that
+        let mut encoder = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("update encoder"),
+        });
+    
+        let staging_buffer = self.gpu.device.create_buffer_with_data(
+            bytemuck::cast_slice(&[self.uniforms]),
+            wgpu::BufferUsage::COPY_SRC,
+        );
+    
+        encoder.copy_buffer_to_buffer(&staging_buffer, 0, &self.gpu.uniform_buffer, 0, std::mem::size_of::<Uniforms>() as wgpu::BufferAddress);
+    
+        // We need to remember to submit our CommandEncoder's output
+        // otherwise we won't see any change.
+        self.gpu.queue.submit(&[encoder.finish()]);
     }
 
     pub fn render(&mut self) {
