@@ -34,6 +34,7 @@ pub struct CameraController {
     x_axis: f32,
     y_axis: f32,
     z_axis: f32,
+    speed_multiplier: f32,
 }
 
 impl CameraController {
@@ -43,6 +44,7 @@ impl CameraController {
             x_axis: 0.0,
             y_axis: 0.0,
             z_axis: 0.0,
+            speed_multiplier: 1.0,
         }
     }
 
@@ -57,29 +59,38 @@ impl CameraController {
                 ..
             } => {
                 let is_pressed = *state == ElementState::Pressed;
+                let axis_value = if is_pressed { 1.0 } else { 0.0 };
                 match keycode {
                     VirtualKeyCode::A | VirtualKeyCode::Left => {
-                        self.x_axis = if is_pressed { -1.0 } else { 0.0 };
+                        self.x_axis = -axis_value;
                         true
                     }
                     VirtualKeyCode::D | VirtualKeyCode::Right => {
-                        self.x_axis = if is_pressed { 1.0 } else { 0.0 };
+                        self.x_axis = axis_value;
                         true
                     }
                     VirtualKeyCode::W | VirtualKeyCode::Up => {
-                        self.y_axis = if is_pressed { 1.0 } else { 0.0 };
+                        self.y_axis = axis_value;
                         true
                     }
                     VirtualKeyCode::S | VirtualKeyCode::Down => {
-                        self.y_axis = if is_pressed { -1.0 } else { 0.0 };
+                        self.y_axis = -axis_value;
                         true
                     }
                     VirtualKeyCode::R | VirtualKeyCode::E => {
-                        self.z_axis = if is_pressed { -1.0 } else { 0.0 };
+                        self.z_axis = -axis_value;
                         true
                     }
                     VirtualKeyCode::F | VirtualKeyCode::Q => {
-                        self.z_axis = if is_pressed { 1.0 } else { 0.0 };
+                        self.z_axis = axis_value;
+                        true
+                    }
+                    VirtualKeyCode::LShift | VirtualKeyCode::RShift => {
+                        self.speed_multiplier = if is_pressed { 2.0 } else { 1.0 };
+                        true
+                    }
+                    VirtualKeyCode::LAlt | VirtualKeyCode::RAlt => {
+                        self.speed_multiplier = if is_pressed { 0.25 } else { 1.0 };
                         true
                     }
                     _ => false,
@@ -90,8 +101,8 @@ impl CameraController {
     }
 
     pub fn update_camera(&self, camera: &mut Camera) {
-        camera.eye.x += self.x_axis * self.speed;
-        camera.eye.y += self.y_axis * self.speed;
-        camera.eye.z += self.z_axis * self.speed;
+        camera.eye.x += self.x_axis * self.speed * self.speed_multiplier;
+        camera.eye.y += self.y_axis * self.speed * self.speed_multiplier;
+        camera.eye.z += self.z_axis * self.speed * self.speed_multiplier;
     }
 }
