@@ -73,7 +73,6 @@ impl Shape {
     }
 }
 
-
 use std::fmt;
 impl fmt::Display for Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) ->fmt::Result {

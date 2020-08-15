@@ -1,23 +1,29 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, shape, Vertex, GraphicsConfig};
+use crate::graphics::{shaders, shape, Vertex, GraphicsConfig, Camera, Uniforms};
 
 pub struct State {
     config: GraphicsConfig,
+    camera: Camera,
+    uniforms: Uniforms,
+    gpu: GpuState,
+    size: winit::dpi::PhysicalSize<u32>,
+}
 
+struct GpuState {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     sc_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
-
     render_pipeline: wgpu::RenderPipeline,
 
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
 
-    size: winit::dpi::PhysicalSize<u32>,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
 }
 
 impl State {
@@ -33,7 +39,7 @@ impl State {
             },
             wgpu::BackendBit::PRIMARY, // Vulkan + Metal + DX12 + Browser WebGPU
         ).await.unwrap();
-
+    
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             extensions: wgpu::Extensions {
                 anisotropic_filtering: false,
@@ -49,15 +55,62 @@ impl State {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
+    
+    
+        let camera = Camera {
+            eye: (0.0, 1.0, 10.0).into(),
+            target: (0.0, 0.0, 0.0).into(),
+            up: cgmath::Vector3::unit_y(),
+            aspect: sc_desc.width as f32 / sc_desc.height as f32,
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
 
+        let mut uniforms = Uniforms::new();
+        uniforms.update_view_proj(&camera);
+    
+        let uniform_buffer = device.create_buffer_with_data(
+            bytemuck::cast_slice(&[uniforms]),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+    
+        let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            bindings: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        dynamic: false,
+                    },
+                }
+            ],
+            label: Some("uniform_bind_group_layout"),
+        });
+    
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &uniform_buffer,
+                        // FYI: you can share a single buffer between bindings.
+                        range: 0..std::mem::size_of_val(&uniforms) as wgpu::BufferAddress,
+                    }
+                }
+            ],
+            label: Some("uniform_bind_group"),
+        });
+    
         let mut compiler = shaders::ShaderCompiler::new()?;
         let vs_module = shaders::basic::vertex_module(&device, &mut compiler)?;
         let fs_module = shaders::basic::fragment_module(&device, &mut compiler)?;
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&uniform_bind_group_layout],
         });
-
+    
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             layout: &render_pipeline_layout,
             vertex_stage: wgpu::ProgrammableStageDescriptor {
@@ -96,8 +149,7 @@ impl State {
             alpha_to_coverage_enabled: false,
         });
 
-        use shape::Shape;
-        let circle = Shape::square([1.0, 1.0, 1.0]);
+        let circle = shape::Shape::circle([1.0, 1.0, 1.0], 50);
 
         let vertex_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&circle.vertices),
@@ -111,24 +163,30 @@ impl State {
 
         Ok(Self {
             config,
-            surface,
-            device,
-            queue,
-            sc_desc,
-            swap_chain,
-            render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            num_indices,
+            camera,
+            uniforms,
             size,
+            gpu: GpuState {
+                surface,
+                device,
+                queue,
+                sc_desc,
+                swap_chain,
+                render_pipeline,
+                vertex_buffer,
+                index_buffer,
+                num_indices,
+                uniform_buffer,
+                uniform_bind_group,
+            },
         })
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         self.size = new_size;
-        self.sc_desc.width = new_size.width;
-        self.sc_desc.height = new_size.height;
-        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
+        self.gpu.sc_desc.width = new_size.width;
+        self.gpu.sc_desc.height = new_size.height;
+        self.gpu.swap_chain = self.gpu.device.create_swap_chain(&self.gpu.surface, &self.gpu.sc_desc);
     }
 
     pub fn input(&mut self, _event: &WindowEvent) -> bool {
@@ -140,10 +198,10 @@ impl State {
     }
 
     pub fn render(&mut self) {
-        let frame = self.swap_chain.get_next_texture()
+        let frame = self.gpu.swap_chain.get_next_texture()
             .expect("Timeout getting texture");
 
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
 
@@ -161,13 +219,14 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-            render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            render_pass.set_pipeline(&self.gpu.render_pipeline);
+            render_pass.set_bind_group(0, &self.gpu.uniform_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, &self.gpu.vertex_buffer, 0, 0);
+            render_pass.set_index_buffer(&self.gpu.index_buffer, 0, 0);
+            render_pass.draw_indexed(0..self.gpu.num_indices, 0, 0..1);
         }
 
-        self.queue.submit(&[
+        self.gpu.queue.submit(&[
             encoder.finish()
         ]);
     }
