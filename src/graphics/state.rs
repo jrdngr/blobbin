@@ -1,20 +1,6 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::graphics::{shaders, Vertex, GraphicsConfig};
-
-const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-    Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-    Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-    Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-    Vertex { position: [0.44147372, 0.2347359, 0.0],color: [0.5, 0.0, 0.5] }, // E
-];
-
-const INDICES: &[u16] = &[
-    0, 1, 4,
-    1, 2, 4,
-    2, 3, 4,
-];
+use crate::graphics::{shaders, shape, Vertex, GraphicsConfig};
 
 pub struct State {
     config: GraphicsConfig,
@@ -110,15 +96,18 @@ impl State {
             alpha_to_coverage_enabled: false,
         });
 
+        use shape::Shape;
+        let circle = Shape::square([1.0, 1.0, 1.0]);
+
         let vertex_buffer = device.create_buffer_with_data(
-            bytemuck::cast_slice(VERTICES),
+            bytemuck::cast_slice(&circle.vertices),
             wgpu::BufferUsage::VERTEX,
         );
         let index_buffer = device.create_buffer_with_data(
-            bytemuck::cast_slice(INDICES),
+            bytemuck::cast_slice(&circle.indices),
             wgpu::BufferUsage::INDEX,
         );
-        let num_indices = INDICES.len() as u32;
+        let num_indices = circle.indices.len() as u32;
 
         Ok(Self {
             config,

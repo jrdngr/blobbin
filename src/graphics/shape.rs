@@ -49,8 +49,6 @@ impl Shape {
         let resolution = resolution.max(3);
 
         let mut vertices = Vec::with_capacity(resolution as usize + 1);
-        vertices.push(Vertex::new_2d(0.0, 0.0, color));
-
         let mut indices = Vec::with_capacity(resolution as usize * 3);
 
         let delta = (2.0 * PI) / resolution as f32;
@@ -61,17 +59,45 @@ impl Shape {
             let y = theta.sin();
             vertices.push(Vertex::new_2d(x, y, color));
 
-            indices.push(0);
-            indices.push(i + 1);
-
-            let next_index = (i + 2) % (resolution + 1); 
-            indices.push(next_index);
+            indices.push(i);
+            indices.push((i + 1) % resolution);
+            indices.push(resolution);
         }
+
+        vertices.push(Vertex::new_2d(0.0, 0.0, color));
 
         Self {
             vertices,
             indices,
         }
+    }
+}
+
+
+use std::fmt;
+impl fmt::Display for Shape {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) ->fmt::Result {
+        writeln!(f, "--------------")?;
+        for (i, vertex) in self.vertices.iter().enumerate() {
+            if i == 0 {
+                writeln!(f, "|  Color: ({}, {}, {})", vertex.color[0], vertex.color[1], vertex.color[2])?;
+                writeln!(f, "|  Vertices:")?;
+            }
+            writeln!(f, "|  {} -> ({}, {})", i, vertex.position[0], vertex.position[1])?;
+        }
+        writeln!(f, "--------------")?;
+        write!(f, "|  Indices:")?;
+        for (i, index) in self.indices.iter().enumerate() {
+            if i % 3 == 0 {
+                writeln!(f, "")?;
+                write!(f, "|  ")?;
+            }
+            write!(f, "{} ", index)?;
+        }
+        writeln!(f, "")?;
+        writeln!(f, "--------------")?;
+
+        Ok(())
     }
 }
 
