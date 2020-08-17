@@ -1,7 +1,7 @@
 use winit::{event::WindowEvent, window::Window};
 
 use crate::graphics::{
-    color, shaders, shape, Camera, CameraController, GraphicsConfig, Instance, Uniforms, Vertex,
+    shaders, Camera, CameraController, GraphicsConfig, Instance, Uniforms, Vertex, Object,
 };
 
 pub struct State {
@@ -12,6 +12,7 @@ pub struct State {
     instances: Vec<Instance>,
     gpu: GpuState,
     size: winit::dpi::PhysicalSize<u32>,
+    objects: Vec<Object>,
 }
 
 struct GpuState {
@@ -22,14 +23,10 @@ struct GpuState {
     swap_chain: wgpu::SwapChain,
     render_pipeline: wgpu::RenderPipeline,
 
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    num_indices: u32,
-
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 
-    instance_buffer: wgpu::Buffer,
+    _instance_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -196,18 +193,6 @@ impl State {
             alpha_to_coverage_enabled: false,
         });
 
-        let circle = shape::Shape::circle(color::random_blue(), 50);
-
-        let vertex_buffer = device.create_buffer_with_data(
-            bytemuck::cast_slice(&circle.vertices),
-            wgpu::BufferUsage::VERTEX,
-        );
-        let index_buffer = device.create_buffer_with_data(
-            bytemuck::cast_slice(&circle.indices),
-            wgpu::BufferUsage::INDEX,
-        );
-        let num_indices = circle.indices.len() as u32;
-
         Ok(Self {
             config,
             camera,
@@ -215,6 +200,7 @@ impl State {
             uniforms,
             instances,
             size,
+            objects: Vec::new(),
             gpu: GpuState {
                 surface,
                 device,
@@ -222,14 +208,16 @@ impl State {
                 sc_desc,
                 swap_chain,
                 render_pipeline,
-                vertex_buffer,
-                index_buffer,
-                num_indices,
                 uniform_buffer,
                 uniform_bind_group,
-                instance_buffer,
+                _instance_buffer: instance_buffer,
             },
         })
+    }
+
+    pub fn create_object(&mut self, vertices: &[Vertex], indices: &[u16]) {
+        let object = Object::new(&self.gpu.device, vertices, indices);
+        self.objects.push(object);
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -305,9 +293,13 @@ impl State {
 
             render_pass.set_pipeline(&self.gpu.render_pipeline);
             render_pass.set_bind_group(0, &self.gpu.uniform_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, &self.gpu.vertex_buffer, 0, 0);
-            render_pass.set_index_buffer(&self.gpu.index_buffer, 0, 0);
-            render_pass.draw_indexed(0..self.gpu.num_indices, 0, 0..self.instances.len() as u32);
+
+            for object in &self.objects {
+                let num_instances = 1;
+                render_pass.set_vertex_buffer(0, &object.vertex_buffer, 0, 0);
+                render_pass.set_index_buffer(&object.index_buffer, 0, 0);
+                render_pass.draw_indexed(0..object.num_indices, 0, 0..num_instances);            
+            }
         }
 
         self.gpu.queue.submit(&[encoder.finish()]);

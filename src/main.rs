@@ -17,6 +17,8 @@ pub fn main() -> anyhow::Result<()> {
     let window = WindowBuilder::new().build(&event_loop)?;
 
     let mut state = block_on(State::new(&window, GraphicsConfig::default()))?;
+    let circle = graphics::shape::circle(graphics::color::random_blue(), 50);
+    state.create_object(&circle.vertices, &circle.indices);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
