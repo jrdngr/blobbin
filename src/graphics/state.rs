@@ -74,6 +74,8 @@ impl State {
         let mut uniforms = Uniforms::new();
         uniforms.update_view_proj(&camera);
 
+        let instance_buffer = device.create_buffer_with_data(&[0, 1, 2],  wgpu::BufferUsage::STORAGE_READ);
+
         let uniform_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&[uniforms]),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -109,6 +111,13 @@ impl State {
                     resource: wgpu::BindingResource::Buffer {
                         buffer: &uniform_buffer,
                         range: 0..std::mem::size_of_val(&uniforms) as wgpu::BufferAddress,
+                    },
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &instance_buffer,
+                        range: 0..1 as wgpu::BufferAddress,
                     },
                 },
             ],
@@ -181,7 +190,7 @@ impl State {
     pub fn create_object(&mut self, vertices: &[Vertex], indices: &[u16]) -> usize {
         let object = Object::new(&self.gpu.device, vertices, indices);
         self.objects.push(object);
-        self.objects.len()
+        self.objects.len() - 1
     }
 
     pub fn create_instance(&mut self, object_id: usize, position: cgmath::Vector3<f32>, rotation: cgmath::Quaternion<f32>) -> Option<usize> {
@@ -234,8 +243,51 @@ impl State {
                 });
         
                 self.gpu.uniform_bind_group = uniform_bind_group;
+
+                let mut compiler = shaders::ShaderCompiler::new().unwrap();
+                let vs_module = shaders::basic::vertex_module(&self.gpu.device, &mut compiler).unwrap();
+                let fs_module = shaders::basic::fragment_module(&self.gpu.device, &mut compiler).unwrap();
+
+                let render_pipeline_layout =
+                self.gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    bind_group_layouts: &[&uniform_bind_group_layout],
+                });
+    
+                self.gpu.render_pipeline = self.gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    layout: &render_pipeline_layout,
+                    vertex_stage: wgpu::ProgrammableStageDescriptor {
+                        module: &vs_module,
+                        entry_point: "main",
+                    },
+                    fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+                        module: &fs_module,
+                        entry_point: "main",
+                    }),
+                    rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: wgpu::CullMode::Back,
+                        depth_bias: 0,
+                        depth_bias_slope_scale: 0.0,
+                        depth_bias_clamp: 0.0,
+                    }),
+                    primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+                    color_states: &[wgpu::ColorStateDescriptor {
+                        format: self.gpu.sc_desc.format,
+                        color_blend: wgpu::BlendDescriptor::REPLACE,
+                        alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                        write_mask: wgpu::ColorWrite::ALL,
+                    }],
+                    depth_stencil_state: None,
+                    vertex_state: wgpu::VertexStateDescriptor {
+                        index_format: wgpu::IndexFormat::Uint16,
+                        vertex_buffers: &[Vertex::descriptor()],
+                    },
+                    sample_count: 1,
+                    sample_mask: !0,
+                    alpha_to_coverage_enabled: false,
+                });
         
-                Some(object.num_instances())
+                Some(object.num_instances() - 1)
             },
             None => None
         }

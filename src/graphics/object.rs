@@ -22,7 +22,7 @@ impl Object {
         let num_indices = indices.len() as u32;
 
         let instance_buffer = device.create_buffer_with_data(
-            &[],
+            &[0, 1, 2],
             wgpu::BufferUsage::STORAGE_READ,
         );
 
@@ -70,6 +70,5 @@ impl Object {
             bytemuck::cast_slice(&instance_data),
             wgpu::BufferUsage::STORAGE_READ,
         );
-
     }
 }

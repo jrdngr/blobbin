@@ -20,15 +20,15 @@ pub fn main() -> anyhow::Result<()> {
     let circle = graphics::shape::circle(graphics::color::random_blue(), 50);
     let circle_id = state.create_object(&circle.vertices, &circle.indices);
 
-    let position = cgmath::Vector3 {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
-    use cgmath::Rotation3;
-    let rotation =
-        cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
+    let (position, rotation) = instance_params(0.0, 0.0);
     state.create_instance(circle_id, position, rotation);
+
+    let (position, rotation) = instance_params(10.0, 0.0);
+    state.create_instance(circle_id, position, rotation);
+
+    let (position, rotation) = instance_params(10.0, -10.0);
+    state.create_instance(circle_id, position, rotation);
+
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -65,6 +65,20 @@ pub fn main() -> anyhow::Result<()> {
         }
         _ => {}
     });
+}
+
+fn instance_params(x: f32, y: f32) -> (cgmath::Vector3<f32>, cgmath::Quaternion<f32>) {
+    use cgmath::Rotation3;
+
+    let position = cgmath::Vector3 {
+        x,
+        y,
+        z: 0.0,
+    };
+
+    let rotation = cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
+
+    (position, rotation)
 }
 
 // use app::{App, World};
