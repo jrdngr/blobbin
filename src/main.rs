@@ -18,7 +18,17 @@ pub fn main() -> anyhow::Result<()> {
 
     let mut state = block_on(State::new(&window, GraphicsConfig::default()))?;
     let circle = graphics::shape::circle(graphics::color::random_blue(), 50);
-    state.create_object(&circle.vertices, &circle.indices);
+    let circle_id = state.create_object(&circle.vertices, &circle.indices);
+
+    let position = cgmath::Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    use cgmath::Rotation3;
+    let rotation =
+        cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
+    state.create_instance(circle_id, position, rotation);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {

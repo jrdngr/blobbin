@@ -9,7 +9,6 @@ pub struct State {
     camera: Camera,
     camera_controller: CameraController,
     uniforms: Uniforms,
-    instances: Vec<Instance>,
     gpu: GpuState,
     size: winit::dpi::PhysicalSize<u32>,
     objects: Vec<Object>,
@@ -25,8 +24,6 @@ struct GpuState {
 
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
-
-    _instance_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -77,30 +74,6 @@ impl State {
         let mut uniforms = Uniforms::new();
         uniforms.update_view_proj(&camera);
 
-        let mut instances = Vec::new();
-        let position = cgmath::Vector3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
-        use cgmath::Rotation3;
-        let rotation =
-            cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0));
-
-        // Make sure if you add new instances to the Vec that you recreate the instance_buffer and as well as uniform_bind_group, 
-        // otherwise you're new instances won't show up correctly.
-
-        instances.push(Instance { position, rotation });
-
-        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        // we'll need the size for later
-        let instance_buffer_size =
-            instance_data.len() * std::mem::size_of::<cgmath::Matrix4<f32>>();
-        let instance_buffer = device.create_buffer_with_data(
-            bytemuck::cast_slice(&instance_data),
-            wgpu::BufferUsage::STORAGE_READ,
-        );
-
         let uniform_buffer = device.create_buffer_with_data(
             bytemuck::cast_slice(&[uniforms]),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -135,15 +108,7 @@ impl State {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer {
                         buffer: &uniform_buffer,
-                        // FYI: you can share a single buffer between bindings.
                         range: 0..std::mem::size_of_val(&uniforms) as wgpu::BufferAddress,
-                    },
-                },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &instance_buffer,
-                        range: 0..instance_buffer_size as wgpu::BufferAddress,
                     },
                 },
             ],
@@ -198,7 +163,6 @@ impl State {
             camera,
             camera_controller,
             uniforms,
-            instances,
             size,
             objects: Vec::new(),
             gpu: GpuState {
@@ -210,14 +174,71 @@ impl State {
                 render_pipeline,
                 uniform_buffer,
                 uniform_bind_group,
-                _instance_buffer: instance_buffer,
             },
         })
     }
 
-    pub fn create_object(&mut self, vertices: &[Vertex], indices: &[u16]) {
+    pub fn create_object(&mut self, vertices: &[Vertex], indices: &[u16]) -> usize {
         let object = Object::new(&self.gpu.device, vertices, indices);
         self.objects.push(object);
+        self.objects.len()
+    }
+
+    pub fn create_instance(&mut self, object_id: usize, position: cgmath::Vector3<f32>, rotation: cgmath::Quaternion<f32>) -> Option<usize> {
+        match self.objects.get_mut(object_id) {
+            Some(object) => {
+                object.add_instance(&self.gpu.device, position, rotation);
+
+                let uniform_bind_group_layout =
+                self.gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    bindings: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStage::VERTEX,
+                            ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStage::VERTEX,
+                            ty: wgpu::BindingType::StorageBuffer {
+                                // We don't plan on changing the size of this buffer
+                                dynamic: false,
+                                // The shader is not allowed to modify it's contents
+                                readonly: true,
+                            },
+                        },
+                    ],
+                    label: Some("uniform_bind_group_layout"),
+                });
+        
+                let uniform_bind_group = self.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &uniform_bind_group_layout,
+                    bindings: &[
+                        wgpu::Binding {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &self.gpu.uniform_buffer,
+                                // FYI: you can share a single buffer between bindings.
+                                range: 0..std::mem::size_of_val(&self.uniforms) as wgpu::BufferAddress,
+                            },
+                        },
+                        wgpu::Binding {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &object.instance_buffer(),
+                                range: 0..object.instance_buffer_size() as wgpu::BufferAddress,
+                            },
+                        },
+                    ],
+                    label: Some("uniform_bind_group"),
+                });
+        
+                self.gpu.uniform_bind_group = uniform_bind_group;
+        
+                Some(object.num_instances())
+            },
+            None => None
+        }
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -295,10 +316,12 @@ impl State {
             render_pass.set_bind_group(0, &self.gpu.uniform_bind_group, &[]);
 
             for object in &self.objects {
-                let num_instances = 1;
-                render_pass.set_vertex_buffer(0, &object.vertex_buffer, 0, 0);
-                render_pass.set_index_buffer(&object.index_buffer, 0, 0);
-                render_pass.draw_indexed(0..object.num_indices, 0, 0..num_instances);            
+                let num_instanaces = object.num_instances() as u32;
+                if num_instanaces > 0 {
+                    render_pass.set_vertex_buffer(0, object.vertex_buffer(), 0, 0);
+                    render_pass.set_index_buffer(object.index_buffer(), 0, 0);
+                    render_pass.draw_indexed(0..object.num_indices(), 0, 0..num_instanaces);                
+                }
             }
         }
 
