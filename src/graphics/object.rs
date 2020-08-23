@@ -23,7 +23,7 @@ impl Object {
 
         let instance_buffer = device.create_buffer_with_data(
             &[0, 1, 2],
-            wgpu::BufferUsage::STORAGE_READ,
+            wgpu::BufferUsage::STORAGE,
         );
 
         Self {

@@ -1,6 +1,7 @@
 pub mod basic;
 
 use anyhow::Context;
+use wgpu::ShaderModuleSource;
 
 pub struct ShaderCompiler {
     compiler: shaderc::Compiler,
@@ -18,7 +19,7 @@ impl ShaderCompiler {
         source: impl AsRef<str>,
         name: impl AsRef<str>,
         entry_point: impl AsRef<str>,
-    ) -> anyhow::Result<Vec<u32>> {
+    ) -> anyhow::Result<ShaderModuleSource> {
         self.create_shader(source, name, entry_point, shaderc::ShaderKind::Fragment)
     }
 
@@ -27,7 +28,7 @@ impl ShaderCompiler {
         source: impl AsRef<str>,
         name: impl AsRef<str>,
         entry_point: impl AsRef<str>,
-    ) -> anyhow::Result<Vec<u32>> {
+    ) -> anyhow::Result<ShaderModuleSource> {
         self.create_shader(source, name, entry_point, shaderc::ShaderKind::Vertex)
     }
 
@@ -36,7 +37,7 @@ impl ShaderCompiler {
         source: impl AsRef<str>,
         name: impl AsRef<str>,
         entry_point: impl AsRef<str>,
-    ) -> anyhow::Result<Vec<u32>> {
+    ) -> anyhow::Result<ShaderModuleSource> {
         self.create_shader(source, name, entry_point, shaderc::ShaderKind::Compute)
     }
 
@@ -46,7 +47,7 @@ impl ShaderCompiler {
         name: impl AsRef<str>,
         entry_point: impl AsRef<str>,
         kind: shaderc::ShaderKind,
-    ) -> anyhow::Result<Vec<u32>> {
+    ) -> anyhow::Result<ShaderModuleSource> {
         let spirv = self.compiler.compile_into_spirv(
             source.as_ref(),
             kind,
@@ -54,7 +55,7 @@ impl ShaderCompiler {
             entry_point.as_ref(),
             None,
         )?;
-        let data = wgpu::read_spirv(std::io::Cursor::new(spirv.as_binary_u8()))?;
+        let data = wgpu::util::make_spirv(spirv.as_binary_u8());
 
         Ok(data)
     }

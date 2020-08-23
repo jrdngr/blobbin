@@ -1,7 +1,7 @@
 use winit::{event::WindowEvent, window::Window};
 
 use crate::graphics::{
-    shaders, Camera, CameraController, GraphicsConfig, Instance, Uniforms, Vertex, Object,
+    shaders, Camera, CameraController, GraphicsConfig, Uniforms, Vertex, Object,
 };
 
 pub struct State {

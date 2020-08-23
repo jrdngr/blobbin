@@ -17,17 +17,18 @@ pub fn main() -> anyhow::Result<()> {
     let window = WindowBuilder::new().build(&event_loop)?;
 
     let mut state = block_on(State::new(&window, GraphicsConfig::default()))?;
-    let circle = graphics::shape::circle(graphics::color::random_blue(), 50);
-    let circle_id = state.create_object(&circle.vertices, &circle.indices);
+    
+    let square = graphics::shape::square(graphics::color::random_green());
+    let square_id = state.create_object(&square.vertices, &square.indices);
 
     let (position, rotation) = instance_params(0.0, 0.0);
-    state.create_instance(circle_id, position, rotation);
+    state.create_instance(square_id, position, rotation);
 
     let (position, rotation) = instance_params(10.0, 0.0);
-    state.create_instance(circle_id, position, rotation);
+    state.create_instance(square_id, position, rotation);
 
     let (position, rotation) = instance_params(10.0, -10.0);
-    state.create_instance(circle_id, position, rotation);
+    state.create_instance(square_id, position, rotation);
 
 
     event_loop.run(move |event, _, control_flow| match event {
